@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수행평가 오류 분석기 — 대부고등학교</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#F4F6F9;color:#1B2A4A}
+.topbar{background:#1B2A4A;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-ico{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
+.brand-ico i{font-size:16px;color:#fff}
+.brand-text strong{display:block;font-size:14px;font-weight:600;color:#fff}
+.brand-text span{font-size:11px;color:rgba(255,255,255,.5)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.subj-label{font-size:12px;color:rgba(255,255,255,.6);white-space:nowrap}
+select#sS{height:32px;padding:0 10px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.25);border-radius:7px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;min-width:160px}
+select#sS option{background:#1B2A4A;color:#fff}
+.rchip{padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap;display:none}
+.rchip-s{background:#0F6E56;color:#9FE1CB}
+.rchip-e{background:#185FA5;color:#B5D4F4}
+.layout{display:flex;min-height:calc(100vh - 54px)}
+.sidebar{width:190px;flex-shrink:0;background:#fff;border-right:1px solid #E2E6ED;padding:16px 10px;display:none;flex-direction:column;gap:3px}
+.sidebar.on{display:flex}
+.sb-label{font-size:10px;font-weight:600;color:#9AA3B2;text-transform:uppercase;letter-spacing:.07em;padding:8px 10px 4px}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;border:none;background:transparent;font-size:13px;color:#5A6478;cursor:pointer;width:100%;text-align:left;transition:.12s}
+.sb-btn i{font-size:16px;flex-shrink:0}
+.sb-btn:hover{background:#F0F4FF;color:#1B2A4A}
+.sb-btn.on{background:#EBF1FF;color:#1748CC;font-weight:600}
+.sb-btn.on i{color:#1748CC}
+.content{flex:1;padding:20px;overflow-x:hidden;min-width:0}
+.ph{min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.ph-ico{width:56px;height:56px;border-radius:16px;background:#EBF1FF;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.ph-ico i{font-size:26px;color:#1748CC}
+.ph h3{font-size:16px;font-weight:600;color:#1B2A4A}
+.ph p{font-size:13px;color:#8A93A6}
+.pg{display:none}.pg.on{display:block}
+.sec-title{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sec-bar{width:4px;height:18px;border-radius:2px;background:#1748CC;flex-shrink:0}
+.sec-title h3{font-size:15px;font-weight:600;color:#1B2A4A}
+.card{background:#fff;border:1px solid #E2E6ED;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:#F8F9FC;border-bottom:1px solid #E2E6ED}
+.card-hd-l{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#1B2A4A}
+.card-hd-l i{font-size:15px;color:#1748CC}
+.card-hd-r{font-size:11px;color:#9AA3B2}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl thead tr{background:#F0F4FF}
+.tbl th{padding:10px 14px;font-size:11px;font-weight:600;color:#4A5578;text-align:left;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #D0D8F0;white-space:nowrap}
+.tbl th.tc{text-align:center}
+.tbl td{padding:11px 14px;border-bottom:1px solid #EDF0F5;color:#1B2A4A;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:#FAFBFF}
+.tbl tfoot tr{background:#F8F9FC}
+.tbl tfoot td{padding:10px 14px;font-size:12px;font-weight:600;color:#4A5578;border-top:2px solid #D0D8F0}
+.tbl tbody tr.rd{background:#FFF0F0}
+.tbl tbody tr.rd:hover{background:#FFE8E8}
+.tbl tbody tr.rw{background:#FFFBF0}
+.tbl tbody tr.rw:hover{background:#FFF6E0}
+.tbl.zebra tbody tr:nth-child(even){background:#FAFBFF}
+.p{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.pi{background:#EBF1FF;color:#1748CC}
+.pm{background:#F0F4FF;color:#4A5578;border:1px solid #D0D8F0}
+.pd{background:#FFE8E8;color:#B91C1C}
+.pw{background:#FFF3CD;color:#92400E}
+.po{background:#D1FAE5;color:#065F46}
+.nb{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#EBF1FF;color:#1748CC;font-size:11px;font-weight:600;flex-shrink:0}
+.sv{display:inline-block;min-width:32px;padding:3px 8px;border-radius:6px;font-size:13px;font-weight:600;text-align:center}
+.svn{background:#F0F4FF;color:#1B2A4A}
+.svd{background:#FFE8E8;color:#B91C1C}
+.svw{background:#FFF3CD;color:#92400E}
+.inp{padding:5px 7px;font-size:13px;border:1px solid #D0D8F0;border-radius:7px;background:#F8F9FC;color:#1B2A4A;text-align:center;width:66px;transition:.12s}
+.inp:focus{outline:none;border-color:#1748CC;background:#fff}
+.inp.bad{border-color:#EF4444;background:#FFF0F0}
+.inp-hint{font-size:10px;color:#9AA3B2;margin-top:3px;text-align:center}
+.rtbar{display:flex;align-items:center;gap:8px;margin:0 16px 16px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500}
+.rtbar.ok{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+.rtbar.bad{background:#FFE8E8;color:#B91C1C;border:1px solid #FCA5A5}
+.rtbar i{font-size:15px}
+.upzone{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 20px;border:2px dashed #C7D2E8;border-radius:10px;cursor:pointer;transition:.15s;text-align:center;margin:16px;background:#FAFBFF}
+.upzone:hover,.upzone.over{border-color:#1748CC;background:#EBF1FF}
+.up-ico{width:56px;height:56px;border-radius:16px;background:#EBF1FF;display:flex;align-items:center;justify-content:center}
+.up-ico i{font-size:26px;color:#1748CC}
+.up-title{font-size:15px;font-weight:600;color:#1B2A4A}
+.up-sub{font-size:12px;color:#8A93A6}
+.up-btn{padding:9px 22px;border:1px solid #C7D2E8;border-radius:8px;background:#fff;font-size:13px;font-weight:600;color:#1B2A4A;cursor:pointer;transition:.12s}
+.up-btn:hover{background:#EBF1FF;border-color:#1748CC;color:#1748CC}
+.pok{display:none;align-items:center;gap:10px;padding:10px 16px;background:#D1FAE5;border-top:1px solid #6EE7B7;font-size:13px;color:#065F46;font-weight:500}
+.pok i{font-size:16px}
+.pchips{display:flex;gap:5px;margin-left:auto}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px}
+.info-item{display:flex;gap:10px;padding:12px;background:#F8F9FC;border-radius:9px;border:1px solid #EDF0F5;align-items:flex-start}
+.ii-ico{width:30px;height:30px;border-radius:7px;background:#EBF1FF;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ii-ico i{font-size:14px;color:#1748CC}
+.ii-txt strong{display:block;font-size:12px;font-weight:600;color:#1B2A4A;margin-bottom:2px}
+.ii-txt span{font-size:11px;color:#8A93A6}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid #E2E6ED;border-radius:12px;padding:14px 16px;border-top:3px solid transparent}
+.stat-n{font-size:28px;font-weight:700;line-height:1;margin-bottom:5px}
+.stat-l{font-size:11px;color:#8A93A6}
+.std{border-top-color:#EF4444}.std .stat-n{color:#B91C1C}
+.stw{border-top-color:#F59E0B}.stw .stat-n{color:#92400E}
+.sto{border-top-color:#10B981}.sto .stat-n{color:#065F46}
+.stn{border-top-color:#1748CC}.stn .stat-n{color:#1B2A4A}
+.al-wrap{background:#fff;border:1px solid #E2E6ED;border-radius:12px;overflow:hidden;margin-bottom:14px}
+.al-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:12px;font-weight:600;color:#fff;border-bottom:1px solid rgba(0,0,0,.08)}
+.al-hd i{font-size:14px}
+.al-hd.hd-set{background:#1748CC}
+.al-hd.hd-stu{background:#7C3AED}
+.al-hd.hd-sum{background:#0369A1}
+.al-row{display:flex;align-items:flex-start;gap:11px;padding:11px 14px;border-bottom:1px solid #EDF0F5;background:#fff}
+.al-row:last-child{border-bottom:none}
+.al-row:hover{background:#FAFBFF}
+.al-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.al-ico i{font-size:14px}
+.ald{background:#FFE8E8}.ald i{color:#B91C1C}
+.alw{background:#FFF3CD}.alw i{color:#92400E}
+.alo{background:#D1FAE5}.alo i{color:#065F46}
+.aln{background:#EBF1FF}.aln i{color:#1748CC}
+.al-body{flex:1;min-width:0}
+.al-title{font-size:13px;font-weight:500;color:#1B2A4A;margin-bottom:2px}
+.al-desc{font-size:12px;color:#6B7280}
+.legend{display:flex;gap:16px;padding:9px 14px;background:#F8F9FC;border-top:1px solid #EDF0F5;font-size:12px;color:#6B7280;flex-wrap:wrap}
+.lg{display:flex;align-items:center;gap:5px}
+.lgsw{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.notice{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#EBF1FF;border:1px solid #C7D2E8;border-radius:9px;font-size:12px;color:#1748CC;margin-bottom:14px}
+.notice i{font-size:14px;flex-shrink:0}
+.upload-err{padding:0 16px 10px}
+@media(max-width:640px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .info-grid{grid-template-columns:1fr}
+  .sidebar{width:160px}
+  .brand-text span{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-ico"><i class="ti ti-clipboard-check"></i></div>
+    <div class="brand-text">
+      <strong>수행평가 오류 분석기</strong>
+      <span>대부고등학교 · 2026학년도 1학기 · 35개 과목</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="subj-label">과목 선택</span>
+    <select id="sS" onchange="onSC()"><option value="">과목을 선택하세요</option></select>
+    <span class="rchip rchip-s" id="cs"></span>
+    <span class="rchip rchip-e" id="ce"></span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sb">
+    <div class="sb-label">메뉴</div>
+    <button class="sb-btn on" id="nb-up" onclick="sp('up')"><i class="ti ti-cloud-upload"></i>파일 업로드</button>
+    <button class="sb-btn" id="nb-cr" onclick="sp('cr')"><i class="ti ti-list-check"></i>평가 기준</button>
+    <button class="sb-btn" id="nb-sc" onclick="sp('sc')"><i class="ti ti-table"></i>점수 확인</button>
+    <button class="sb-btn" id="nb-rs" onclick="sp('rs')"><i class="ti ti-chart-bar"></i>오류 분석</button>
+  </div>
+
+  <div class="content">
+    <div class="ph" id="ph">
+      <div class="ph-ico"><i class="ti ti-clipboard-list"></i></div>
+      <h3>과목을 선택하면 시작됩니다</h3>
+      <p>상단에서 분석할 과목을 선택하세요</p>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="pg" id="pg-up">
+      <div class="sec-title"><div class="sec-bar"></div><h3>파일 업로드</h3></div>
+      <div class="card">
+        <div class="card-hd"><span class="card-hd-l"><i class="ti ti-file-spreadsheet"></i>나이스 xlsx 업로드</span></div>
+        <div class="upzone" id="upz"
+          ondragover="event.preventDefault();this.classList.add('over')"
+          ondragleave="this.classList.remove('over')"
+          ondrop="onDrop(event)"
+          onclick="document.getElementById('fi').click()">
+          <div class="up-ico"><i class="ti ti-file-spreadsheet"></i></div>
+          <div><div class="up-title">클릭하거나 파일을 드래그하세요</div><div class="up-sub">나이스 수행평가 강의실별 일람표 .xlsx</div></div>
+          <button class="up-btn" onclick="event.stopPropagation();document.getElementById('fi').click()"><i class="ti ti-upload" style="font-size:13px;margin-right:4px"></i>파일 선택</button>
+        </div>
+        <input type="file" id="fi" accept=".xlsx,.xls" style="display:none" onchange="onFS(event)">
+        <div id="pok" class="pok"><i class="ti ti-circle-check"></i><span id="pfn"></span> 파싱 완료<div class="pchips" id="pch"></div></div>
+        <div class="upload-err" id="uerr"></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><span class="card-hd-l"><i class="ti ti-info-circle"></i>자동 감지 항목</span></div>
+        <div class="info-grid">
+          <div class="info-item"><div class="ii-ico"><i class="ti ti-scan"></i></div><div class="ii-txt"><strong>영역명 · 만점 · 비율 자동 추출</strong><span>헤더에서 수행평가 설정값 파싱</span></div></div>
+          <div class="info-item"><div class="ii-ico"><i class="ti ti-user-x"></i></div><div class="ii-txt"><strong>자퇴 · 전출 자동 제외</strong><span>비고 열 감지 후 분석에서 제외</span></div></div>
+          <div class="info-item"><div class="ii-ico"><i class="ti ti-calculator"></i></div><div class="ii-txt"><strong>합계 불일치 검출</strong><span>xlsx 합계 vs 개별 점수 합산 비교</span></div></div>
+          <div class="info-item"><div class="ii-ico"><i class="ti ti-alert-triangle"></i></div><div class="ii-txt"><strong>기본점수 · 만점 초과 감지</strong><span>PDF 평가계획 기준과 실시간 대조</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRITERIA -->
+    <div class="pg" id="pg-cr">
+      <div class="sec-title"><div class="sec-bar"></div><h3>평가 기준</h3></div>
+      <div class="card">
+        <div class="card-hd"><span class="card-hd-l"><i class="ti ti-file-description"></i>PDF 기준 — 수행평가 정상값</span><span class="card-hd-r">2026학년도 교수·학습 및 평가계획</span></div>
+        <table class="tbl zebra"><thead><tr><th style="width:44px">#</th><th>영역명</th><th class="tc" style="width:90px">만점</th><th class="tc" style="width:100px">기본점수</th><th class="tc" style="width:100px">반영비율</th></tr></thead><tbody id="ct"></tbody><tfoot id="cf"></tfoot></table>
+      </div>
+      <div class="card">
+        <div class="card-hd"><span class="card-hd-l"><i class="ti ti-adjustments-horizontal"></i>나이스 설정값 검증</span><span class="card-hd-r">xlsx 업로드 시 자동 반영 · 직접 수정 가능</span></div>
+        <table class="tbl"><thead><tr><th style="width:44px">#</th><th>영역명</th><th class="tc" style="width:110px">만점</th><th class="tc" style="width:120px">기본점수</th><th class="tc" style="width:120px">반영비율 %</th><th class="tc" style="width:76px">상태</th></tr></thead><tbody id="st"></tbody></table>
+        <div id="rtb" class="rtbar"></div>
+      </div>
+    </div>
+
+    <!-- SCORES -->
+    <div class="pg" id="pg-sc">
+      <div class="sec-title"><div class="sec-bar"></div><h3>점수 확인</h3></div>
+      <div class="notice" id="scn"><i class="ti ti-upload"></i>파일을 업로드하면 학생 점수가 자동으로 표시됩니다.</div>
+      <div id="scw" style="display:none">
+        <div class="card">
+          <div class="card-hd"><span class="card-hd-l"><i class="ti ti-users"></i>학생별 수행평가 점수</span><span class="card-hd-r" id="scm"></span></div>
+          <div style="overflow-x:auto"><table class="tbl"><thead id="sth"></thead><tbody id="stb"></tbody></table></div>
+          <div class="legend">
+            <span class="lg"><span class="lgsw" style="background:#FFE8E8;border:1px solid #FCA5A5"></span>오류 점수</span>
+            <span class="lg"><span class="lgsw" style="background:#FFF3CD;border:1px solid #FCD34D"></span>주의 점수</span>
+            <span class="lg"><span class="lgsw" style="background:#F0F4FF;border:1px solid #D0D8F0"></span>정상 점수</span>
+            <span class="lg" style="margin-left:auto"><span class="lgsw" style="background:#FFF0F0;border:1px solid #FCA5A5"></span>오류 행</span>
+            <span class="lg"><span class="lgsw" style="background:#FFFBF0;border:1px solid #FCD34D"></span>주의 행</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="pg" id="pg-rs">
+      <div class="sec-title"><div class="sec-bar"></div><h3>오류 분석</h3></div>
+      <div class="stats">
+        <div class="stat std"><div class="stat-n" id="sd">—</div><div class="stat-l">오류 항목</div></div>
+        <div class="stat stw"><div class="stat-n" id="sw">—</div><div class="stat-l">주의 항목</div></div>
+        <div class="stat sto"><div class="stat-n" id="so">—</div><div class="stat-l">정상 학생</div></div>
+        <div class="stat stn"><div class="stat-n" id="stt">—</div><div class="stat-l">전체 학생</div></div>
+      </div>
+      <div class="al-wrap"><div class="al-hd hd-set"><i class="ti ti-settings"></i>① 헤더 · 설정값 오류</div><div id="rs-set"></div></div>
+      <div class="al-wrap"><div class="al-hd hd-stu"><i class="ti ti-user"></i>② 학생별 점수 오류</div><div id="rs-stu"></div></div>
+      <div class="al-wrap"><div class="al-hd hd-sum"><i class="ti ti-calculator"></i>③ 합계 불일치</div><div id="rs-sum"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUBJ={
+"공통국어1":{시험:60,수행:40,영역:[{명:"시 에세이 쓰기",만점:20,기본:7,비율:20},{명:"사회적 쟁점에 관한 견해 표현하기",만점:20,기본:7,비율:20},{명:"음운 변동 과정 탐구하기",만점:20,기본:7,비율:20}]},
+"문학":{시험:50,수행:50,영역:[{명:"사회적 맥락을 고려한 소설 비평문 작성하기",만점:20,기본:8,비율:20},{명:"문학 작품 추천서 작성하기",만점:15,기본:6,비율:15},{명:"한국 작가 소개하기",만점:15,기본:6,비율:15}]},
+"화법과 작문":{시험:60,수행:40,영역:[{명:"주제 탐구 보고서 쓰기",만점:25,기본:9,비율:25},{명:"나를 소개하는 글쓰기",만점:20,기본:7,비율:20},{명:"질문에 효과적으로 답변하기",만점:15,기본:6,비율:15}]},
+"고전 읽기":{시험:0,수행:100,영역:[{명:"작품 속 논제 탐구 논술하기",만점:30,기본:12,비율:30},{명:"인생 고전 소개하기",만점:30,기본:12,비율:30},{명:"고전 시가 탐구하기",만점:20,기본:8,비율:20},{명:"조선 시대 작품 분석하기",만점:20,기본:8,비율:20}]},
+"세계지리":{시험:50,수행:50,영역:[{명:"대기대순환 보고서 작성하기",만점:25,기본:9,비율:25},{명:"세계 이색 지형 탐구하기",만점:25,기본:9,비율:25}]},
+"윤리와 사상":{시험:60,수행:40,영역:[{명:"한국 윤리 사상으로 앎과 함을 잇는 글쓰기",만점:20,기본:7,비율:20},{명:"의무론과 공리주의로 접근하는 윤리적 딜레마 해결",만점:20,기본:7,비율:20}]},
+"생활과 윤리":{시험:60,수행:40,영역:[{명:"삶과 죽음의 윤리 문제 토론하기",만점:20,기본:7,비율:20},{명:"미래 직업인으로서 지향해야 할 직업윤리 고찰하기",만점:20,기본:7,비율:20}]},
+"한국사1":{시험:60,수행:40,영역:[{명:"항일운동 방안 토론하기",만점:30,기본:11,비율:30},{명:"전근대 생활양식 분석 글쓰기",만점:10,기본:4,비율:10}]},
+"세계사":{시험:50,수행:50,영역:[{명:"세계화에 따른 교류 분석 글쓰기",만점:25,기본:9,비율:25},{명:"유럽 역사 여행 패키지 제안 프로젝트",만점:25,기본:9,비율:25}]},
+"통합사회1":{시험:50,수행:50,영역:[{명:"사회현상 탐구 보고서 작성하기",만점:20,기본:8,비율:20},{명:"독서프로젝트 작성하기",만점:20,기본:8,비율:20},{명:"수업 참여 평가 및 배움일지 작성하기",만점:10,기본:4,비율:10}]},
+"사회와 문화":{시험:60,수행:40,영역:[{명:"사회문화 현상 분석하기",만점:20,기본:7,비율:20},{명:"일탈행동의 유형과 기능 분석하기",만점:10,기본:4,비율:10},{명:"하위문화의 특징과 사례 분석하기",만점:10,기본:4,비율:10}]},
+"사회문제탐구":{시험:45,수행:55,영역:[{명:"탐구보고서 작성하기",만점:20,기본:7,비율:20},{명:"연구 자료 수집하기",만점:10,기본:4,비율:10},{명:"탐구계획서 작성하기",만점:15,기본:6,비율:15},{명:"사회문제 해결하기",만점:10,기본:4,비율:10}]},
+"공통수학Ⅰ":{시험:40,수행:60,영역:[{명:"이차방정식과 이차함수 관계 논술하기",만점:20,기본:7,비율:20},{명:"방정식과 부등식 문제 구성하고 해결하기",만점:20,기본:7,비율:20},{명:"다항식 계산하기",만점:20,기본:7,비율:20}]},
+"대수":{시험:40,수행:60,영역:[{명:"삼각함수를 이용한 학교 건물 높이 구하기",만점:20,기본:7,비율:20},{명:"수열의 합 유도 과정 논술하기",만점:20,기본:7,비율:20},{명:"지수 로그함수 그리기",만점:20,기본:7,비율:20}]},
+"확률과 통계":{시험:40,수행:60,영역:[{명:"수학도서감상문 작성하기",만점:20,기본:7,비율:20},{명:"확률 문제 구성하고 해결하기",만점:20,기본:7,비율:20},{명:"경우의 수 문제 해결하기",만점:20,기본:7,비율:20}]},
+"미적분":{시험:40,수행:60,영역:[{명:"수학도서감상문 작성하기",만점:20,기본:7,비율:20},{명:"미적분 활용 사례 설명하기",만점:20,기본:7,비율:20},{명:"극한 판별하기",만점:20,기본:7,비율:20}]},
+"화학":{시험:40,수행:60,영역:[{명:"화학의 사회적 기여와 진로 활용 방안 탐구하기",만점:20,기본:8,비율:20},{명:"분자 구조 전문가 되기",만점:20,기본:8,비율:20},{명:"분자의 극성 실험하기",만점:20,기본:8,비율:20}]},
+"화학Ⅱ":{시험:30,수행:70,영역:[{명:"기체의 분자량 측정 프로젝트",만점:30,기본:11,비율:30},{명:"물의 성질 활용 설계 과학 기사 작성하기",만점:20,기본:8,비율:20},{명:"화학 평형 변화 과학 기사 작성하기",만점:20,기본:8,비율:20}]},
+"통합과학1":{시험:50,수행:50,영역:[{명:"생명과 지구를 위한 독서 프로젝트",만점:20,기본:8,비율:20},{명:"화학 결합 설명하기",만점:20,기본:8,비율:20},{명:"역학 시스템 설명하기",만점:10,기본:4,비율:10}]},
+"생명과학":{시험:50,수행:50,영역:[{명:"환경 문제 해결 프로젝트 수행하기",만점:20,기본:8,비율:20},{명:"면역 인포그래픽 제작하기",만점:20,기본:8,비율:20},{명:"활동전위 분석하기",만점:10,기본:4,비율:10}]},
+"생명과학Ⅱ":{시험:40,수행:60,영역:[{명:"효모의 발효 과정 탐구하기",만점:20,기본:7,비율:20},{명:"소설 연계 유전자 조작 기술의 윤리적 쟁점 토론하기",만점:20,기본:7,비율:20},{명:"소설 연계 생명과학 탐구 보고서 쓰기",만점:20,기본:7,비율:20}]},
+"과학탐구실험1":{시험:0,수행:100,영역:[{명:"관찰을 통해 귀납적 탐구 이해하기",만점:30,기본:11,비율:30},{명:"기후 변화 대응 포스터 만들기",만점:30,기본:11,비율:30},{명:"갈릴레이의 결정적 실험 따라하기",만점:20,기본:7,비율:20},{명:"멘델레예프 사례를 통해 과학의 본성 추론하기",만점:20,기본:7,비율:20}]},
+"물리학":{시험:40,수행:60,영역:[{명:"역학 수레를 이용한 운동량 보존 탐구 설계하기",만점:20,기본:7,비율:20},{명:"저항의 연결에 따른 전류와 전압 측정하여 비교하기",만점:20,기본:7,비율:20},{명:"에너지 전달 기술이 현대 문명에 미친 영향 표현하기",만점:20,기본:7,비율:20}]},
+"정보":{시험:40,수행:60,영역:[{명:"정렬과 탐색 알고리즘 분석 및 프로그래밍",만점:20,기본:7,비율:20},{명:"데이터 수집과 데이터 시각화하기",만점:20,기본:7,비율:20},{명:"기계학습을 통한 문제 해결하기",만점:20,기본:7,비율:20}]},
+"체육1":{시험:0,수행:100,영역:[{명:"전략형 스포츠 탁구 경기 기능 연결하기",만점:20,기본:7,비율:20},{명:"전략형 스포츠 탁구 경기 전략 적용하기",만점:20,기본:7,비율:20},{명:"전략형 스포츠 배드민턴 경기 기능 연결하기",만점:20,기본:7,비율:20},{명:"전략형 스포츠 배드민턴 경기 전략 적용하기",만점:20,기본:7,비율:20},{명:"네트형 스포츠 배드민턴 경기 기능 및 전략 분석하기",만점:20,기본:7,비율:20}]},
+"운동과 건강":{시험:0,수행:100,영역:[{명:"기술형 스포츠 탁구 경기 기능 연결하기",만점:20,기본:7,비율:20},{명:"기술형 스포츠 탁구 경기 전략 적용하기",만점:20,기본:7,비율:20},{명:"기술형 스포츠 넷볼 경기 기능 연결하기",만점:20,기본:7,비율:20},{명:"기술형 스포츠 넷볼 경기 전략 적용하기",만점:20,기본:7,비율:20},{명:"영역형 스포츠 넷볼 경기 기능 및 전략 분석하기",만점:20,기본:7,비율:20}]},
+"스포츠 생활":{시험:0,수행:100,영역:[{명:"경쟁형 스포츠 탁구 경기 기능 연결하기",만점:20,기본:7,비율:20},{명:"경쟁형 스포츠 탁구 경기 전략 적용하기",만점:20,기본:7,비율:20},{명:"경쟁형 스포츠 농구 경기 기능 연결하기",만점:20,기본:7,비율:20},{명:"경쟁형 스포츠 농구 경기 전략 적용하기",만점:20,기본:7,비율:20},{명:"영역형 스포츠 농구 경기 기능 및 전략 분석하기",만점:20,기본:7,비율:20}]},
+"음악":{시험:0,수행:100,영역:[{명:"기타 연주하기",만점:30,기본:11,비율:30},{명:"서양음악사 탐구하기",만점:30,기본:11,비율:30},{명:"기본 화성을 이해하고 작곡하기",만점:20,기본:7,비율:20},{명:"미래 음악의 흐름 예측하기",만점:20,기본:7,비율:20}]},
+"공통영어1":{시험:60,수행:40,영역:[{명:"나의 진로 목표 영어 글쓰기",만점:15,기본:5,비율:15},{명:"미래 기술 기사 내용 전달하기",만점:15,기본:5,비율:15},{명:"그림 도표 활용 내용 설명하기",만점:10,기본:3,비율:10}]},
+"영어Ⅰ":{시험:60,수행:40,영역:[{명:"글의 세부 정보·요지 파악하기",만점:15,기본:5,비율:15},{명:"사실적 정보 설명하기",만점:15,기본:5,비율:15},{명:"나의 진로·경험 영어 글쓰기",만점:10,기본:3,비율:10}]},
+"영어독해와 작문":{시험:60,수행:40,영역:[{명:"나의 진로 로드맵 영어 글쓰기",만점:15,기본:5,비율:15},{명:"환경보호 실천 촉구 영어 글쓰기",만점:15,기본:5,비율:15},{명:"그림 도표 설명하기",만점:10,기본:3,비율:10}]},
+"일본어":{시험:40,수행:60,영역:[{명:"일본어 의사소통 기본 표현 듣고 작문하기",만점:30,기본:11,비율:30},{명:"일본의 기본문자 익히기",만점:15,기본:5,비율:15},{명:"일본의 연중행사 포스터 전시하기",만점:15,기본:5,비율:15}]},
+"일본어회화I":{시험:0,수행:100,영역:[{명:"일본어로 우리 지역 홍보하기",만점:30,기본:11,비율:30},{명:"자연스러운 일본어 읽고 말하기",만점:25,기본:9,비율:25},{명:"일본 문화 탐구 독서 논술하기",만점:25,기본:9,비율:25},{명:"나만의 회화 노트 만들기",만점:20,기본:7,비율:20}]},
+"한문":{시험:40,수행:60,영역:[{명:"한자 창작하기",만점:20,기본:7,비율:20},{명:"나만의 성어 사전 만들기",만점:20,기본:7,비율:20},{명:"한문 단문 분석하기",만점:20,기본:7,비율:20}]},
+"한문Ⅱ":{시험:40,수행:60,영역:[{명:"대중매체를 통한 성찰 지침서 발표하기",만점:30,기본:11,비율:30},{명:"고사성어 논술하기",만점:20,기본:7,비율:20},{명:"한문 내용 분석하기",만점:10,기본:4,비율:10}]}
+};
+let cK=null,pD=null,SC={};
+const sel=document.getElementById('sS');
+Object.keys(SUBJ).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;sel.appendChild(o);});
+function onSC(){
+  const k=sel.value;
+  if(!k){document.getElementById('ph').style.display='flex';document.getElementById('sb').classList.remove('on');['cs','ce'].forEach(id=>document.getElementById(id).style.display='none');['up','cr','sc','rs'].forEach(i=>document.getElementById('pg-'+i).classList.remove('on'));return;}
+  cK=k;const d=SUBJ[k];
+  document.getElementById('ph').style.display='none';document.getElementById('sb').classList.add('on');
+  document.getElementById('cs').textContent='수행 '+d.수행+'%';document.getElementById('cs').style.display='inline-flex';
+  document.getElementById('ce').textContent='시험 '+d.시험+'%';document.getElementById('ce').style.display='inline-flex';
+  if(!SC[k])SC[k]=d.영역.map(a=>({만점:a.만점,기본:a.기본,비율:a.비율}));
+  pD=null;document.getElementById('pok').style.display='none';document.getElementById('uerr').innerHTML='';
+  sp('up');rCrit();rSet();
+}
+function sp(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  document.getElementById('nb-'+id).classList.add('on');
+  if(id==='cr')rSet();if(id==='sc')rSc();if(id==='rs')rAn();
+}
+function onDrop(e){e.preventDefault();document.getElementById('upz').classList.remove('over');const f=e.dataTransfer.files[0];if(f)pF(f);}
+function onFS(e){const f=e.target.files[0];if(f)pF(f);}
+function pF(file){
+  document.getElementById('uerr').innerHTML='';
+  if(!file.name.match(/\.xlsx?$/i)){sErr('xlsx 또는 xls 파일만 지원합니다.');return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const res=pX(wb.Sheets[wb.SheetNames[0]]);
+      if(res.error){sErr(res.error);return;}
+      pD=res;
+      if(cK&&res.areas)res.areas.forEach((a,i)=>{if(!SC[cK][i])return;if(a.max!==null)SC[cK][i].만점=a.max;if(a.ratio!==null)SC[cK][i].비율=a.ratio;});
+      const b=document.getElementById('pok');b.style.display='flex';
+      document.getElementById('pfn').textContent=file.name;
+      document.getElementById('pch').innerHTML=[`<span class="p po">학생 ${res.students.length}명</span>`,`<span class="p pi">영역 ${res.areas.length}개</span>`,res.excluded>0?`<span class="p pw">제외 ${res.excluded}명</span>`:''  ].join('');
+      rCrit();rSet();rSc();
+    }catch(ex){sErr('파싱 오류: '+ex.message);}
+  };
+  r.readAsArrayBuffer(file);
+}
+function sErr(m){document.getElementById('uerr').innerHTML=`<div class="al-row" style="border:1px solid #FCA5A5;border-radius:8px;background:#FFF0F0;margin-top:4px"><div class="al-ico ald"><i class="ti ti-alert-circle"></i></div><div class="al-body"><div class="al-title">${m}</div></div></div>`;}
+function pX(ws){
+  const rng=XLSX.utils.decode_range(ws['!ref']||'A1:Z50');const rows=[];
+  for(let r=rng.s.r;r<=rng.e.r;r++){const row=[];for(let c=rng.s.c;c<=rng.e.c;c++){const cell=ws[XLSX.utils.encode_cell({r,c})];row.push(cell?cell.v:null);}rows.push(row);}
+  let hI=-1,hR=[];
+  for(let i=0;i<rows.length;i++){const f=rows[i].map(v=>typeof v==='string'?v:'').join(' ');if(f.includes('반/번호')||f.includes('반번호')){hI=i;hR=rows[i];break;}}
+  if(hI<0)return{error:'나이스 수행평가 일람표 형식을 인식할 수 없습니다.'};
+  const areas=[];let nC=-1,nmC=-1,tC=-1,ntC=-1;
+  hR.forEach((cell,ci)=>{if(!cell)return;const s=String(cell);
+    if(s.includes('반/번호')||s.includes('반번호'))nC=ci;
+    else if(s.trim()==='성명')nmC=ci;
+    else if(s.includes('합 계')||s.includes('합계'))tC=ci;
+    else if(s.trim()==='비고')ntC=ci;
+    else if(s.includes('만점')||(s.includes('%')&&!s.includes('반영'))){
+      const nm=s.split('\n')[0].trim()||s.split('(')[0].trim();
+      const mx=s.match(/만점\s*([\d.]+)/);const rt=s.match(/([\d.]+)%/);
+      areas.push({name:nm,max:mx?Math.round(parseFloat(mx[1])):null,ratio:rt?Math.round(parseFloat(rt[1])):null,colIdx:ci});
+    }
+  });
+  if(!areas.length)return{error:'수행평가 영역 열을 찾을 수 없습니다.'};
+  const SK=['응시생','총 점','총점','평 균','평균','학과'];
+  const students=[];let excluded=0;
+  for(let i=hI+1;i<rows.length;i++){
+    const row=rows[i];if(!row||row.every(v=>v===null||v===''))continue;
+    const rt2=row.map(v=>typeof v==='string'?v:'').join('');if(SK.some(k=>rt2.includes(k)))continue;
+    const nv=nC>=0?row[nC]:null;if(!nv)continue;
+    const nme=nmC>=0?row[nmC]:'';if(!nme||typeof nme!=='string'||!nme.trim())continue;
+    const ntv=ntC>=0?row[ntC]:'';const note=typeof ntv==='string'&&ntv.trim()?ntv.trim():'';
+    let isEx=note&&['자퇴','전출','전학','미응시','휴학'].some(k=>note.includes(k));
+    const scores=areas.map(a=>{const v=row[a.colIdx];if(v===null||v===''||v===undefined)return null;if(typeof v==='string'&&isNaN(parseFloat(v))){isEx=true;return null;}return typeof v==='number'?v:parseFloat(v);});
+    if(isEx){excluded++;continue;}
+    const tv=tC>=0?row[tC]:null;
+    students.push({no:String(nv||''),name:nme.trim(),scores,total:typeof tv==='number'?tv:(tv?parseFloat(tv):null)});
+  }
+  if(!students.length)return{error:'학생 데이터를 찾을 수 없습니다.'};
+  return{areas,students,excluded};
+}
+function rCrit(){
+  if(!cK)return;const d=SUBJ[cK];
+  document.getElementById('ct').innerHTML=d.영역.map((a,i)=>`<tr><td><span class="nb">${i+1}</span></td><td style="font-size:13px">${a.명}</td><td style="text-align:center"><span class="p pi">${a.만점}점</span></td><td style="text-align:center"><span class="p pm">${a.기본}점</span></td><td style="text-align:center"><span class="p pm">${a.비율}%</span></td></tr>`).join('');
+  const tm=d.영역.reduce((s,a)=>s+a.만점,0),tr=d.영역.reduce((s,a)=>s+a.비율,0);
+  document.getElementById('cf').innerHTML=`<tr><td colspan="2" style="padding:10px 14px;font-weight:600">합계</td><td style="text-align:center;padding:10px 14px"><span class="p pi">${tm}점</span></td><td></td><td style="text-align:center;padding:10px 14px"><span class="p pi">${tr}%</span></td></tr>`;
+}
+function rSet(){
+  if(!cK)return;const d=SUBJ[cK],sc=SC[cK];
+  document.getElementById('st').innerHTML=d.영역.map((a,i)=>{
+    const s=sc[i];const mok=s.만점===a.만점,bok=s.기본===a.기본,rok=s.비율===a.비율,all=mok&&bok&&rok;
+    return`<tr class="${!all?(!mok||!bok?'rd':'rw'):''}"><td><span class="nb">${i+1}</span></td><td style="font-size:12px">${a.명}</td>
+    <td style="text-align:center"><input type="number" class="inp${mok?'':' bad'}" value="${s.만점}" min="0" max="200" onchange="SC['${cK}'][${i}].만점=+this.value;rSet()"><div class="inp-hint">정상 ${a.만점}점</div></td>
+    <td style="text-align:center"><input type="number" class="inp${bok?'':' bad'}" value="${s.기본}" min="0" max="100" onchange="SC['${cK}'][${i}].기본=+this.value;rSet()"><div class="inp-hint">정상 ${a.기본}점</div></td>
+    <td style="text-align:center"><input type="number" class="inp${rok?'':' bad'}" value="${s.비율}" min="0" max="100" onchange="SC['${cK}'][${i}].비율=+this.value;rSet()"><div class="inp-hint">정상 ${a.비율}%</div></td>
+    <td style="text-align:center">${all?'<span class="p po">정상</span>':'<span class="p pd">불일치</span>'}</td></tr>`;}).join('');
+  const tot=sc.reduce((s,a)=>s+a.비율,0),ok=tot===d.수행;
+  const b=document.getElementById('rtb');b.className='rtbar '+(ok?'ok':'bad');
+  b.innerHTML=`<i class="ti ti-${ok?'circle-check':'alert-circle'}" style="font-size:15px"></i>&nbsp;반영비율 합계 <strong>${tot}%</strong>&emsp;${ok?`정상 — 수행 ${d.수행}%`:`오류: ${d.수행}%여야 합니다`}`;
+}
+function gE(s){
+  if(!cK)return[];const sc=SC[cK],d=SUBJ[cK];const errs=[];
+  s.scores.forEach((v,i)=>{if(v===null||v===undefined)return;const st=sc[i]||{만점:d.영역[i]?.만점,기본:d.영역[i]?.기본};
+    if(v>st.만점)errs.push({level:'danger',msg:`수행${i+1}: ${v}점 > 만점 ${st.만점}점`});
+    if(v<st.기본)errs.push({level:'danger',msg:`수행${i+1}: ${v}점 < 기본점수 ${st.기본}점`});
+    if(v===0)errs.push({level:'warn',msg:`수행${i+1}: 0점 입력 확인`});
+  });return errs;
+}
+function rSc(){
+  if(!pD){document.getElementById('scn').style.display='flex';document.getElementById('scw').style.display='none';return;}
+  document.getElementById('scn').style.display='none';document.getElementById('scw').style.display='block';
+  const{students,areas}=pD,sc=SC[cK]||[];
+  document.getElementById('scm').textContent=`총 ${students.length}명`;
+  document.getElementById('sth').innerHTML=`<tr><th style="width:58px">번호</th><th style="width:76px">이름</th>${areas.map((a,i)=>`<th class="tc" style="width:72px">수행${i+1}<br><span style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">/${sc[i]?.만점??a.max??'?'}점</span></th>`).join('')}<th class="tc" style="width:72px">xlsx합계</th><th class="tc" style="width:72px">계산합계</th><th class="tc" style="width:66px">상태</th></tr>`;
+  document.getElementById('stb').innerHTML=students.map(s=>{
+    const errs=gE(s),calc=s.scores.reduce((a,v)=>a+(v??0),0),sumOk=s.total===null||Math.abs(calc-s.total)<0.01;
+    const hd=errs.some(e=>e.level==='danger')||!sumOk,hw=errs.some(e=>e.level==='warn');
+    return`<tr class="${hd?'rd':hw?'rw':''}"><td style="font-size:12px;color:#6B7280">${s.no}</td><td style="font-weight:600">${s.name}</td>${s.scores.map((v,i)=>{const st=sc[i];if(!st)return`<td style="text-align:center">${v??'—'}</td>`;const cl=v===null?'':v>st.만점||v<st.기본?'sv svd':v===0?'sv svw':'sv svn';return`<td style="text-align:center"><span class="${cl}">${v??'—'}</span></td>`;}).join('')}<td style="text-align:center;color:#6B7280">${s.total??'—'}</td><td style="text-align:center;font-weight:600;${!sumOk?'color:#B91C1C':''}">${calc}</td><td style="text-align:center">${!errs.length&&sumOk?'<span class="p po">정상</span>':hd?'<span class="p pd">오류</span>':'<span class="p pw">주의</span>'}</td></tr>`;}).join('');
+}
+function rAn(){
+  if(!cK)return;const d=SUBJ[cK],sc=SC[cK];
+  const se=[];
+  sc.forEach((s,i)=>{const a=d.영역[i];if(!a)return;
+    if(s.만점!==a.만점)se.push({l:'danger',m:`수행${i+1} — 만점 불일치`,d:`나이스 ${s.만점}점 → PDF 기준 ${a.만점}점`});
+    if(s.기본!==a.기본)se.push({l:'danger',m:`수행${i+1} — 기본점수 불일치`,d:`나이스 ${s.기본}점 → PDF 기준 ${a.기본}점`});
+    if(s.비율!==a.비율)se.push({l:'warn',m:`수행${i+1} — 반영비율 불일치`,d:`나이스 ${s.비율}% → PDF 기준 ${a.비율}%`});
+  });
+  const rt=sc.reduce((s,a)=>s+a.비율,0);
+  if(rt!==d.수행)se.push({l:'danger',m:'반영비율 합계 불일치',d:`현재 ${rt}% → 정상 ${d.수행}%`});
+  if(pD){
+    pD.areas.forEach((a,i)=>{const ref=d.영역[i];if(!ref){se.push({l:'warn',m:`xlsx 수행영역 ${i+1} — PDF 기준에 없음`,d:`"${a.name}"`});return;}
+      if(a.max!==null&&a.max!==ref.만점)se.push({l:'danger',m:`xlsx 헤더 수행${i+1} — 만점 불일치`,d:`xlsx ${a.max}점 → PDF 기준 ${ref.만점}점`});
+      if(a.ratio!==null&&a.ratio!==ref.비율)se.push({l:'warn',m:`xlsx 헤더 수행${i+1} — 반영비율 불일치`,d:`xlsx ${a.ratio}% → PDF 기준 ${ref.비율}%`});
+    });
+    if(pD.areas.length!==d.영역.length)se.push({l:'warn',m:'수행평가 영역 수 불일치',d:`xlsx ${pD.areas.length}개 → PDF 기준 ${d.영역.length}개`});
+  }
+  const stE=[],smE=[];
+  if(pD){
+    pD.students.forEach(s=>{
+      gE(s).forEach(e=>stE.push({l:e.level,m:`${s.name} (${s.no}) — ${e.msg}`}));
+      const calc=s.scores.reduce((a,v)=>a+(v??0),0);
+      if(s.total!==null&&Math.abs(calc-s.total)>0.01)smE.push({l:'danger',m:`${s.name} (${s.no}) — 합계 불일치`,d:`계산값 ${calc}점 ≠ xlsx 합계 ${s.total}점`});
+    });
+  }
+  const dN=se.filter(e=>e.l==='danger').length+stE.filter(e=>e.l==='danger').length+smE.length;
+  const wN=se.filter(e=>e.l==='warn').length+stE.filter(e=>e.l==='warn').length;
+  const tot=pD?pD.students.length:0,okN=pD?pD.students.filter((_,i)=>gE(pD.students[i]).length===0).length:0;
+  document.getElementById('sd').textContent=dN;document.getElementById('sw').textContent=wN;
+  document.getElementById('so').textContent=okN;document.getElementById('stt').textContent=tot;
+  dA(se,'rs-set');dA(stE,'rs-stu');dA(smE,'rs-sum');
+}
+function dA(errs,id){
+  const el=document.getElementById(id);
+  if(!pD&&id!=='rs-set'){el.innerHTML=`<div class="al-row"><div class="al-ico aln"><i class="ti ti-upload"></i></div><div class="al-body"><div class="al-title">파일을 업로드하면 분석됩니다</div></div></div>`;return;}
+  if(!errs.length){el.innerHTML=`<div class="al-row"><div class="al-ico alo"><i class="ti ti-circle-check"></i></div><div class="al-body"><div class="al-title" style="color:#065F46">이상 없음</div></div></div>`;return;}
+  el.innerHTML=errs.map(e=>`<div class="al-row"><div class="al-ico ${e.l==='danger'?'ald':'alw'}"><i class="ti ti-${e.l==='danger'?'alert-circle':'alert-triangle'}"></i></div><div class="al-body"><div class="al-title">${e.m}</div>${e.d?`<div class="al-desc">${e.d}</div>`:''}</div><div style="flex-shrink:0;align-self:center"><span class="p ${e.l==='danger'?'pd':'pw'}">${e.l==='danger'?'오류':'주의'}</span></div></div>`).join('');
+}
+</script>
+</body>
+</html>
